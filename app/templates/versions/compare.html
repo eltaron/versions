@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}مقارنة الإصدارات - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-arrow-left-right"></i> مقارنة الإصدارات</h1>
+</div>
+
+{% set ctl = {'New Feature': 'ميزة جديدة', 'Bug Fix': 'إصلاح خطأ', 'Improvement': 'تحسين', 'Security': 'أمان', 'Breaking Change': 'تغيير جوهري', 'Deprecation': 'إيقاف تشغيل', 'Known Issue': 'مشكلة معروفة'} %}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('versions.compare') }}" id="compareForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="system_id" class="form-label">النظام</label>
+                    <select class="form-select" id="system_id" name="system_id" required onchange="loadVersions()">
+                        <option value="">اختر النظام...</option>
+                        {% for sys in systems %}
+                        <option value="{{ sys.id }}" {% if selected_system_id == sys.id %}selected{% endif %}>{{ sys.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="version_a_id" class="form-label">الإصدار القديم (أ)</label>
+                    <select class="form-select" id="version_a_id" name="version_a_id">
+                        <option value="">اختر...</option>
+                        {% for v in versions_a %}
+                        <option value="{{ v.id }}" {% if version_a_id == v.id %}selected{% endif %}>v{{ v.version_number }} ({{ 'صدر' if v.status == 'Released' else 'مسودة' if v.status == 'Draft' else 'مؤرشف' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="version_b_id" class="form-label">الإصدار الجديد (ب)</label>
+                    <select class="form-select" id="version_b_id" name="version_b_id">
+                        <option value="">اختر...</option>
+                        {% for v in versions_b %}
+                        <option value="{{ v.id }}" {% if version_b_id == v.id %}selected{% endif %}>v{{ v.version_number }} ({{ 'صدر' if v.status == 'Released' else 'مسودة' if v.status == 'Draft' else 'مؤرشف' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-arrow-left-right"></i> مقارنة
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if comparison %}
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">v{{ comparison.version_a.version_number }} <small class="opacity-75">(القديم)</small></h5>
+            </div>
+            <div class="card-body text-center text-muted">
+                <p>الإصدار الأساسي</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">v{{ comparison.version_b.version_number }} <small class="opacity-75">(الجديد)</small></h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if comparison.added %}
+<div class="card mt-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-plus-circle"></i> التغييرات المضافة</h5>
+    </div>
+    <div class="card-body">
+        {% set change_labels = {
+            'New Feature': ('primary', 'bi-plus-circle', 'ميزة جديدة'),
+            'Bug Fix': ('danger', 'bi-bug', 'إصلاح خطأ'),
+            'Improvement': ('info', 'bi-lightning', 'تحسين'),
+            'Security': ('warning', 'bi-shield-lock', 'أمان'),
+            'Breaking Change': ('danger', 'bi-exclamation-triangle', 'تغيير جوهري'),
+            'Deprecation': ('secondary', 'bi-x-circle', 'إيقاف'),
+            'Known Issue': ('dark', 'bi-question-circle', 'مشكلة معروفة')
+        } %}
+
+        {% for change_type, changes in comparison.added.items() %}
+        {% set color, icon, label = change_labels.get(change_type, ('secondary', 'bi-circle', change_type)) %}
+        <div class="mb-3">
+            <h6><i class="bi {{ icon }} text-{{ color }}"></i> {{ label }}</h6>
+            <ul class="list-group">
+                {% for change in changes %}
+                <li class="list-group-item">
+                    <strong>{{ change.title }}</strong>
+                    {% if change.description %}
+                    <br><small class="text-muted">{{ change.description }}</small>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if comparison.removed %}
+<div class="card mt-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-dash-circle"></i> التغييرات الموجودة فقط في v{{ comparison.version_a.version_number }}</h5>
+    </div>
+    <div class="card-body">
+        <ul class="list-group">
+            {% for change in comparison.removed %}
+            <li class="list-group-item text-muted">
+                <strong>{{ change.title }}</strong> ({{ ctl.get(change.change_type, change.change_type) }})
+                {% if change.description %}
+                <br><small>{{ change.description }}</small>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{% if not comparison.added and not comparison.removed %}
+<div class="alert alert-info mt-4">
+    <i class="bi bi-info-circle"></i> كلا الإصدارين يحتويان على نفس سجلات التغيير.
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadVersions() {
+    const systemId = document.getElementById('system_id').value;
+    if (systemId) {
+        window.location.href = '{{ url_for("versions.compare") }}?system_id=' + systemId;
+    }
+}
+</script>
+{% endblock %}

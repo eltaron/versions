@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل المستخدم - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-pencil"></i> تعديل المستخدم</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('users.edit', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="full_name" class="form-label">الاسم الكامل</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">كلمة المرور الجديدة (اترك فارغاً لعدم التغيير)</label>
+                            <input type="password" class="form-control" id="password" name="password" minlength="6">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confirm_password" class="form-label">تأكيد كلمة المرور الجديدة</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="role" class="form-label">الدور</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="Viewer" {% if user.role == 'Viewer' %}selected{% endif %}>مشاهد</option>
+                                <option value="Developer" {% if user.role == 'Developer' %}selected{% endif %}>مطور</option>
+                                <option value="Admin" {% if user.role == 'Admin' %}selected{% endif %}>مدير</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="is_active" class="form-label">الحالة</label>
+                            <select class="form-select" id="is_active" name="is_active">
+                                <option value="1" {% if user.is_active %}selected{% endif %}>نشط</option>
+                                <option value="0" {% if not user.is_active %}selected{% endif %}>غير نشط</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> حفظ التغييرات
+                            </button>
+                            <a href="{{ url_for('users.index') }}" class="btn btn-outline-secondary ms-2">إلغاء</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

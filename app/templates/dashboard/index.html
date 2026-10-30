@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-speedometer2"></i> لوحة التحكم</h1>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card">
+            <div class="stat-icon text-primary"><i class="bi bi-pc-display"></i></div>
+            <div class="stat-value">{{ stats.total_systems }}</div>
+            <div class="stat-label">إجمالي الأنظمة</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card">
+            <div class="stat-icon text-success"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value">{{ stats.active_systems }}</div>
+            <div class="stat-label">أنظمة نشطة</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card">
+            <div class="stat-icon text-info"><i class="bi bi-tag"></i></div>
+            <div class="stat-value">{{ stats.total_versions }}</div>
+            <div class="stat-label">إجمالي الإصدارات</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card">
+            <div class="stat-icon text-warning"><i class="bi bi-calendar-check"></i></div>
+            <div class="stat-value">{{ stats.versions_this_month }}</div>
+            <div class="stat-label">صادر هذا الشهر</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card">
+            <div class="stat-icon text-secondary"><i class="bi bi-pencil"></i></div>
+            <div class="stat-value">{{ stats.draft_versions }}</div>
+            <div class="stat-label">مسودات</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card">
+            <div class="stat-icon text-danger"><i class="bi bi-archive"></i></div>
+            <div class="stat-value">{{ stats.archived_systems }}</div>
+            <div class="stat-label">أنظمة مؤرشفة</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> الإصدارات الحالية</h5>
+                <a href="{{ url_for('reports.current_versions') }}" class="btn btn-sm btn-outline-primary">عرض التقرير</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>النظام</th>
+                                <th>النوع</th>
+                                <th>الإصدار الحالي</th>
+                                <th>تاريخ الإصدار</th>
+                                <th>الحالة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in system_data %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('systems.details', system_id=item.system.id) }}" class="fw-bold text-decoration-none">
+                                        {{ item.system.name }}
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-light text-dark">{{ {'Desktop Application': 'تطبيق سطح مكتب', 'Web Application': 'تطبيق ويب', 'Website': 'موقع إلكتروني', 'Mobile Application': 'تطبيق موبايل', 'API / Service': 'API / خدمة', 'Other': 'أخرى'}.get(item.system.system_type, item.system.system_type) }}</span></td>
+                                <td>
+                                    {% if item.current_version %}
+                                        <span class="badge current-version-badge">v{{ item.current_version.version_number }}</span>
+                                    {% else %}
+                                        <span class="text-muted">لا يوجد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.current_version and item.current_version.release_date %}
+                                        {{ item.current_version.release_date.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if item.system.status == 'Active' else 'warning' if item.system.status == 'Maintenance' else 'secondary' }}">
+                                        {{ 'نشط' if item.system.status == 'Active' else 'صيانة' if item.system.status == 'Maintenance' else 'مؤرشف' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('systems.details', system_id=item.system.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not system_data %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">لا توجد أنظمة</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> آخر الإصدارات</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for version in stats.recent_releases %}
+                    <a href="{{ url_for('versions.details', version_id=version.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge current-version-badge me-2">v{{ version.version_number }}</span>
+                                <span class="text-muted">{{ version.system.name }}</span>
+                            </div>
+                            <small class="text-muted">
+                                {% if version.release_date %}
+                                    {{ version.release_date.strftime('%d/%m/%Y') }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </a>
+                    {% endfor %}
+                    {% if not stats.recent_releases %}
+                    <div class="list-group-item text-center text-muted py-3">لا توجد إصدارات حديثة</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

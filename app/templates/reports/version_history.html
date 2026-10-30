@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}سجل الإصدارات - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-clock-history"></i> سجل الإصدارات</h1>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('reports.version_history') }}" class="row g-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-8">
+                <label for="system_id" class="form-label">اختر النظام</label>
+                <select class="form-select" id="system_id" name="system_id" required>
+                    <option value="">اختر نظاماً...</option>
+                    {% for sys in systems %}
+                    <option value="{{ sys.id }}" {% if selected_system_id == sys.id %}selected{% endif %}>{{ sys.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">إنشاء التقرير</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if data %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{{ data.system.name }} - سجل الإصدارات</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>الإصدار</th>
+                        <th>تاريخ الإصدار</th>
+                        <th>الحالة</th>
+                        <th>النوع</th>
+                        <th>أنشئ بواسطة</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for version in data.versions %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('versions.details', version_id=version.id) }}" class="fw-bold text-decoration-none">
+                                v{{ version.version_number }}
+                            </a>
+                            {% if version.is_current %}
+                                <span class="badge current-badge ms-1">حالي</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ version.release_date.strftime('%d/%m/%Y') if version.release_date else '-' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if version.status == 'Released' else 'warning' if version.status == 'Draft' else 'secondary' }}">
+                                {{ 'صدر' if version.status == 'Released' else 'مسودة' if version.status == 'Draft' else 'مؤرشف' }}
+                            </span>
+                        </td>
+                        <td>{{ 'رئيسي' if version.version_type == 'Major' else 'فرعي' if version.version_type == 'Minor' else 'تصحيح' if version.version_type == 'Patch' else '-' }}</td>
+                        <td>{{ version.creator.full_name if version.creator else '-' }}</td>
+                        <td>{{ (version.description or '-')[:80] }}{% if version.description and version.description|length > 80 %}...{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

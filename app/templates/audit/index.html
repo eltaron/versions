@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}سجل التدقيق - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-journal-text"></i> سجل التدقيق</h1>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('audit.index') }}" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label for="user_id" class="form-label">المستخدم</label>
+                <select class="form-select" id="user_id" name="user_id">
+                    <option value="">جميع المستخدمين</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}" {% if user_id == user.id %}selected{% endif %}>{{ user.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="action" class="form-label">الإجراء</label>
+                <select class="form-select" id="action" name="action">
+                    <option value="">جميع الإجراءات</option>
+                    <option value="CREATE" {% if action == 'CREATE' %}selected{% endif %}>إنشاء</option>
+                    <option value="UPDATE" {% if action == 'UPDATE' %}selected{% endif %}>تعديل</option>
+                    <option value="DELETE" {% if action == 'DELETE' %}selected{% endif %}>حذف</option>
+                    <option value="RELEASE" {% if action == 'RELEASE' %}selected{% endif %}>إصدار</option>
+                    <option value="LOGIN" {% if action == 'LOGIN' %}selected{% endif %}>تسجيل دخول</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="entity_type" class="form-label">نوع الكيان</label>
+                <select class="form-select" id="entity_type" name="entity_type">
+                    <option value="">جميع الأنواع</option>
+                    <option value="System" {% if entity_type == 'System' %}selected{% endif %}>نظام</option>
+                    <option value="Version" {% if entity_type == 'Version' %}selected{% endif %}>إصدار</option>
+                    <option value="User" {% if entity_type == 'User' %}selected{% endif %}>مستخدم</option>
+                    <option value="VersionChange" {% if entity_type == 'VersionChange' %}selected{% endif %}>تغيير</option>
+                    <option value="Auth" {% if entity_type == 'Auth' %}selected{% endif %}>مصادقة</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="start_date" class="form-label">من تاريخ</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date or '' }}">
+            </div>
+            <div class="col-md-2">
+                <label for="end_date" class="form-label">إلى تاريخ</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date or '' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>التاريخ والوقت</th>
+                        <th>المستخدم</th>
+                        <th>الإجراء</th>
+                        <th>نوع الكيان</th>
+                        <th>معرف الكيان</th>
+                        <th>التفاصيل</th>
+                        <th>العنوان</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="text-nowrap">{{ log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '-' }}</td>
+                        <td>{{ log.user.full_name if log.user else 'نظام' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if log.action == 'CREATE' else 'warning' if log.action == 'UPDATE' else 'danger' if log.action == 'DELETE' else 'info' }}">
+                                {% if log.action == 'CREATE' %}إنشاء
+                                {% elif log.action == 'UPDATE' %}تعديل
+                                {% elif log.action == 'DELETE' %}حذف
+                                {% elif log.action == 'RELEASE' %}إصدار
+                                {% elif log.action == 'LOGIN' %}دخول
+                                {% else %}{{ log.action }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ log.entity_type or '-' }}</span>
+                        </td>
+                        <td>{{ log.entity_id or '-' }}</td>
+                        <td class="details-cell">{{ (log.details_json or '-')[:80] }}</td>
+                        <td class="text-truncate" style="max-width:200px;" title="{{ log.title or '' }}">{{ log.title or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if not logs %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">لا توجد سجلات</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}v{{ version.version_number }} - {{ system.name }} - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1>
+            <a href="{{ url_for('systems.details', system_id=system.id) }}" class="text-decoration-none">{{ system.name }}</a>
+        </h1>
+        <span class="text-muted">الإصدار {{ version.version_number }}
+            {% if version.is_current %}
+                <span class="badge current-badge ms-1">حالي</span>
+            {% endif %}
+        </span>
+    </div>
+    <div>
+        {% if version.status == 'Draft' %}
+        <form method="POST" action="{{ url_for('versions.release', version_id=version.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> إصدار
+            </button>
+        </form>
+        <a href="{{ url_for('versions.edit', version_id=version.id) }}" class="btn btn-outline-primary ms-1">
+            <i class="bi bi-pencil"></i> تعديل
+        </a>
+        {% endif %}
+        {% if version.status == 'Released' and not version.is_current %}
+        <form method="POST" action="{{ url_for('versions.archive', version_id=version.id) }}" class="d-inline" onsubmit="return confirm('أرشفة هذا الإصدار؟')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-warning">
+                <i class="bi bi-archive"></i> أرشفة
+            </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('systems.details', system_id=system.id) }}" class="btn btn-outline-secondary ms-1">
+            <i class="bi bi-arrow-right"></i> رجوع
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">معلومات الإصدار</h5></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="text-muted" style="width:45%">الإصدار</td><td><strong>v{{ version.version_number }}</strong></td></tr>
+                    <tr><td class="text-muted">الحالة</td><td>
+                        <span class="badge bg-{{ 'success' if version.status == 'Released' else 'warning' if version.status == 'Draft' else 'secondary' }}">
+                            {{ 'صدر' if version.status == 'Released' else 'مسودة' if version.status == 'Draft' else 'مؤرشف' }}
+                        </span>
+                    </td></tr>
+                    <tr><td class="text-muted">تاريخ الإصدار</td><td>{{ version.release_date.strftime('%d/%m/%Y') if version.release_date else '-' }}</td></tr>
+                    <tr><td class="text-muted">النوع</td><td>{{ 'رئيسي' if version.version_type == 'Major' else 'فرعي' if version.version_type == 'Minor' else 'تصحيح' if version.version_type == 'Patch' else '-' }}</td></tr>
+                    <tr><td class="text-muted">المسؤول</td><td>{{ version.responsible_person or '-' }}</td></tr>
+                    <tr><td class="text-muted">أنشئ بواسطة</td><td>{{ version.creator.full_name if version.creator else '-' }}</td></tr>
+                    <tr><td class="text-muted">تاريخ الإنشاء</td><td>{{ version.created_at.strftime('%d/%m/%Y %H:%M') if version.created_at else '-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if version.description %}
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0">الوصف</h5></div>
+            <div class="card-body">
+                <p class="mb-0">{{ version.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% set change_labels = {
+            'New Feature': ('primary', 'bi-plus-circle', 'ميزة جديدة'),
+            'Bug Fix': ('danger', 'bi-bug', 'إصلاح خطأ'),
+            'Improvement': ('info', 'bi-lightning', 'تحسين'),
+            'Security': ('warning', 'bi-shield-lock', 'أمان'),
+            'Breaking Change': ('danger', 'bi-exclamation-triangle', 'تغيير جوهري'),
+            'Deprecation': ('secondary', 'bi-x-circle', 'إيقاف'),
+            'Known Issue': ('dark', 'bi-question-circle', 'مشكلة معروفة')
+        } %}
+
+        {% for change_type, changes in changes_grouped.items() %}
+        {% set color, icon, label = change_labels.get(change_type, ('secondary', 'bi-circle', change_type)) %}
+        <div class="card mb-3">
+            <div class="card-header bg-{{ color }} bg-opacity-10">
+                <h6 class="mb-0">
+                    <i class="bi {{ icon }}"></i>
+                    {{ label }} <span class="badge bg-{{ color }}">{{ changes|length }}</span>
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for change in changes %}
+                    <li class="list-group-item">
+                        <div class="fw-bold">{{ change.title }}</div>
+                        {% if change.description %}
+                        <div class="text-muted small">{{ change.description }}</div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not changes_grouped %}
+        <div class="card mb-4">
+            <div class="card-body text-center text-muted py-4">
+                لم يتم توثيق أي تغييرات لهذا الإصدار.
+            </div>
+        </div>
+        {% endif %}
+
+        {% if version.notes %}
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0">ملاحظات</h5></div>
+            <div class="card-body">
+                <p class="mb-0">{{ version.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

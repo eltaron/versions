@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}الأنظمة - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-pc-display"></i> الأنظمة</h1>
+    <a href="{{ url_for('systems.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> إضافة نظام
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('systems.index') }}" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="بحث في الأنظمة..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="type" class="form-select">
+                    <option value="">جميع الأنواع</option>
+                    <option value="Desktop Application" {% if selected_type == 'Desktop Application' %}selected{% endif %}>تطبيق سطح مكتب</option>
+                    <option value="Web Application" {% if selected_type == 'Web Application' %}selected{% endif %}>تطبيق ويب</option>
+                    <option value="Website" {% if selected_type == 'Website' %}selected{% endif %}>موقع إلكتروني</option>
+                    <option value="Mobile Application" {% if selected_type == 'Mobile Application' %}selected{% endif %}>تطبيق موبايل</option>
+                    <option value="API / Service" {% if selected_type == 'API / Service' %}selected{% endif %}>API / خدمة</option>
+                    <option value="Other" {% if selected_type == 'Other' %}selected{% endif %}>أخرى</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">جميع الحالات</option>
+                    <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>نشط</option>
+                    <option value="Maintenance" {% if selected_status == 'Maintenance' %}selected{% endif %}>صيانة</option>
+                    <option value="Deprecated" {% if selected_status == 'Deprecated' %}selected{% endif %}>متوقف</option>
+                    <option value="Archived" {% if selected_status == 'Archived' %}selected{% endif %}>مؤرشف</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>النظام</th>
+                        <th>الكود</th>
+                        <th>النوع</th>
+                        <th>الإصدار الحالي</th>
+                        <th>المالك</th>
+                        <th>الحالة</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in system_data %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('systems.details', system_id=item.system.id) }}" class="fw-bold text-decoration-none">
+                                {{ item.system.name }}
+                            </a>
+                        </td>
+                        <td><code>{{ item.system.code }}</code></td>
+                        <td><span class="badge bg-light text-dark">{{ {'Desktop Application': 'تطبيق سطح مكتب', 'Web Application': 'تطبيق ويب', 'Website': 'موقع إلكتروني', 'Mobile Application': 'تطبيق موبايل', 'API / Service': 'API / خدمة', 'Other': 'أخرى'}.get(item.system.system_type, item.system.system_type) }}</span></td>
+                        <td>
+                            {% if item.current_version %}
+                                <span class="badge current-version-badge">v{{ item.current_version.version_number }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.system.owner or '-' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if item.system.status == 'Active' else 'warning' if item.system.status == 'Maintenance' else 'danger' if item.system.status == 'Deprecated' else 'secondary' }}">
+                                {{ 'نشط' if item.system.status == 'Active' else 'صيانة' if item.system.status == 'Maintenance' else 'متوقف' if item.system.status == 'Deprecated' else 'مؤرشف' }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('systems.details', system_id=item.system.id) }}" class="btn btn-sm btn-outline-primary" title="عرض">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('systems.edit', system_id=item.system.id) }}" class="btn btn-sm btn-outline-secondary" title="تعديل">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not system_data %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">لا توجد أنظمة</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

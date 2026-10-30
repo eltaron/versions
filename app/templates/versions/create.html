@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء إصدار - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-plus-circle"></i> إنشاء إصدار جديد</h1>
+</div>
+
+<form method="POST" action="{{ url_for('versions.create') }}" id="versionForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">المعلومات الأساسية</h5></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="system_id" class="form-label">النظام <span class="text-danger">*</span></label>
+                            <select class="form-select" id="system_id" name="system_id" required onchange="onSystemChange()">
+                                <option value="">اختر النظام...</option>
+                                {% for sys in systems %}
+                                <option value="{{ sys.id }}" {% if system_id == sys.id %}selected{% endif %}>{{ sys.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="version_type" class="form-label">نوع الإصدار</label>
+                            <select class="form-select" id="version_type" name="version_type" onchange="onVersionTypeChange()">
+                                {% for vt in version_types %}
+                                <option value="{{ vt }}" {% if vt == 'Minor' %}selected{% endif %}>{{ 'رئيسي' if vt == 'Major' else 'فرعي' if vt == 'Minor' else 'تصحيح' }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="version_number" class="form-label">رقم الإصدار <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="version_number" name="version_number"
+                                   value="{{ suggested_version or '' }}" required>
+                        </div>
+                        {% if current_version %}
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0 py-2">
+                                <i class="bi bi-info-circle"></i>
+                                الإصدار الحالي: <strong>v{{ current_version.version_number }}</strong>
+                                {% if suggested_version %}
+                                &middot; المقترح: <strong>{{ suggested_version }}</strong>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-6">
+                            <label for="release_date" class="form-label">تاريخ الإصدار</label>
+                            <input type="date" class="form-control" id="release_date" name="release_date">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">الحالة</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="Draft">مسودة</option>
+                                <option value="Released">صدر</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="responsible_person" class="form-label">المسؤول</label>
+                            <input type="text" class="form-control" id="responsible_person" name="responsible_person">
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label">الوصف</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="notes" class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">التغييرات</h5>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addChangeRow()">
+                        <i class="bi bi-plus"></i> إضافة تغيير
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="changesContainer">
+                        <div class="change-row mb-3 p-3 border rounded">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label">النوع</label>
+                                    <select name="change_type[]" class="form-select form-select-sm">
+                                        <option value="New Feature">ميزة جديدة</option>
+                                        <option value="Bug Fix">إصلاح خطأ</option>
+                                        <option value="Improvement">تحسين</option>
+                                        <option value="Security">أمان</option>
+                                        <option value="Breaking Change">تغيير جوهري</option>
+                                        <option value="Deprecation">إيقاف</option>
+                                        <option value="Known Issue">مشكلة معروفة</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">العنوان</label>
+                                    <input type="text" name="change_title[]" class="form-control form-control-sm" placeholder="مثال: بحث عن الموظفين">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">الوصف</label>
+                                    <input type="text" name="change_description[]" class="form-control form-control-sm" placeholder="وصف مختصر">
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeChangeRow(this)" title="حذف">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">إجراءات سريعة</h5></div>
+                <div class="card-body">
+                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-check-circle"></i> حفظ الإصدار
+                    </button>
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary w-100">إلغاء</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">نصائح</h5></div>
+                <div class="card-body">
+                    <ul class="mb-0 small">
+                        <li>احفظ كـ <strong>مسودة</strong> للتحضير</li>
+                        <li>اجعله <strong>صدر</strong> ليصبح الإصدار الحالي</li>
+                        <li>أضف التغييرات قبل الإصدار</li>
+                        <li>استخدم الترقيم الدلالي (رقم.رقم.رقم)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function onSystemChange() {
+    const systemId = document.getElementById('system_id').value;
+    if (systemId) {
+        window.location.href = '{{ url_for("versions.create") }}?system_id=' + systemId;
+    }
+}
+
+function onVersionTypeChange() {
+    const systemId = document.getElementById('system_id').value;
+    const versionType = document.getElementById('version_type').value;
+    if (systemId) {
+        fetch(`/versions/api/suggest-version?system_id=${systemId}&version_type=${versionType}`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('version_number').value = data.suggested;
+            });
+    }
+}
+
+function addChangeRow() {
+    const container = document.getElementById('changesContainer');
+    let options = '<option value="New Feature">ميزة جديدة</option><option value="Bug Fix">إصلاح خطأ</option><option value="Improvement">تحسين</option><option value="Security">أمان</option><option value="Breaking Change">تغيير جوهري</option><option value="Deprecation">إيقاف</option><option value="Known Issue">مشكلة معروفة</option>';
+
+    const row = document.createElement('div');
+    row.className = 'change-row mb-3 p-3 border rounded';
+    row.innerHTML = `
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">النوع</label>
+                <select name="change_type[]" class="form-select form-select-sm">${options}</select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">العنوان</label>
+                <input type="text" name="change_title[]" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الوصف</label>
+                <input type="text" name="change_description[]" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeChangeRow(this)" title="حذف">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(row);
+}
+
+function removeChangeRow(btn) {
+    const rows = document.querySelectorAll('.change-row');
+    if (rows.length > 1) {
+        btn.closest('.change-row').remove();
+    }
+}
+</script>
+{% endblock %}

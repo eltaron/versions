@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}مستخدم جديد - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-person-plus"></i> إنشاء مستخدم جديد</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('users.create') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="full_name" class="form-label">الاسم الكامل</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">كلمة المرور</label>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confirm_password" class="form-label">تأكيد كلمة المرور</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="role" class="form-label">الدور</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="Viewer">مشاهد</option>
+                                <option value="Developer">مطور</option>
+                                <option value="Admin">مدير</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> إنشاء المستخدم
+                            </button>
+                            <a href="{{ url_for('users.index') }}" class="btn btn-outline-secondary ms-2">إلغاء</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

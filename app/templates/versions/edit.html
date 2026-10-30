@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل v{{ version.version_number }} - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-pencil"></i> تعديل الإصدار v{{ version.version_number }}</h1>
+    <span class="text-muted">{{ system.name }}</span>
+</div>
+
+<form method="POST" action="{{ url_for('versions.edit', version_id=version.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">المعلومات الأساسية</h5></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="version_number" class="form-label">رقم الإصدار</label>
+                            <input type="text" class="form-control" id="version_number" name="version_number" value="{{ version.version_number }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="version_type" class="form-label">نوع الإصدار</label>
+                            <select class="form-select" id="version_type" name="version_type">
+                                {% for vt in version_types %}
+                                <option value="{{ vt }}" {% if version.version_type == vt %}selected{% endif %}>{{ 'رئيسي' if vt == 'Major' else 'فرعي' if vt == 'Minor' else 'تصحيح' }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="release_date" class="form-label">تاريخ الإصدار</label>
+                            <input type="date" class="form-control" id="release_date" name="release_date"
+                                   value="{{ version.release_date.strftime('%Y-%m-%d') if version.release_date else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="responsible_person" class="form-label">المسؤول</label>
+                            <input type="text" class="form-control" id="responsible_person" name="responsible_person" value="{{ version.responsible_person or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label">الوصف</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ version.description or '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="notes" class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2">{{ version.notes or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">التغييرات</h5>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addChangeRow()">
+                        <i class="bi bi-plus"></i> إضافة تغيير
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% set ctl = {'New Feature': 'ميزة جديدة', 'Bug Fix': 'إصلاح خطأ', 'Improvement': 'تحسين', 'Security': 'أمان', 'Breaking Change': 'تغيير جوهري', 'Deprecation': 'إيقاف تشغيل', 'Known Issue': 'مشكلة معروفة'} %}
+                    <div id="changesContainer">
+                        {% for change in existing_changes %}
+                        <div class="change-row mb-3 p-3 border rounded">
+                            <input type="hidden" name="existing_change_ids[]" value="{{ change.id }}">
+                            <input type="hidden" name="change_id[]" value="{{ change.id }}">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label">النوع</label>
+                                    <select name="change_type[]" class="form-select form-select-sm">
+                                        {% for ct in change_types %}
+                                        <option value="{{ ct }}" {% if change.change_type == ct %}selected{% endif %}>{{ ctl.get(ct, ct) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">العنوان</label>
+                                    <input type="text" name="change_title[]" class="form-control form-control-sm" value="{{ change.title }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">الوصف</label>
+                                    <input type="text" name="change_description[]" class="form-control form-control-sm" value="{{ change.description or '' }}">
+                                </div>
+                                <div class="col-md-1 d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteExistingChange(this, {{ change.id }})" title="حذف">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="change-row mb-3 p-3 border rounded" id="newChangeTemplate" style="display:none">
+                            <input type="hidden" name="change_id[]" value="">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label">النوع</label>
+                                    <select name="change_type[]" class="form-select form-select-sm">
+                                        {% for ct in change_types %}
+                                        <option value="{{ ct }}">{{ ctl.get(ct, ct) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">العنوان</label>
+                                    <input type="text" name="change_title[]" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">الوصف</label>
+                                    <input type="text" name="change_description[]" class="form-control form-select-sm">
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeChangeRow(this)" title="حذف">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">إجراءات</h5></div>
+                <div class="card-body">
+                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-check-circle"></i> حفظ التغييرات
+                    </button>
+                    <a href="{{ url_for('versions.details', version_id=version.id) }}" class="btn btn-outline-secondary w-100">إلغاء</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addChangeRow() {
+    const container = document.getElementById('changesContainer');
+    const template = document.getElementById('newChangeTemplate');
+    const row = template.cloneNode(true);
+    row.style.display = '';
+    row.id = '';
+    container.appendChild(row);
+}
+
+function removeChangeRow(btn) {
+    btn.closest('.change-row').remove();
+}
+
+function deleteExistingChange(btn, changeId) {
+    const container = document.getElementById('changesContainer');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'delete_change_ids[]';
+    input.value = changeId;
+    container.appendChild(input);
+    btn.closest('.change-row').remove();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير الإصدارات - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-calendar-range"></i> تقرير الإصدارات</h1>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('reports.releases') }}" class="row g-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-4">
+                <label for="start_date" class="form-label">من تاريخ</label>
+                <input type="date" class="form-control" id="start_date" name="start_date"
+                       value="{{ start_date.strftime('%Y-%m-%d') if start_date else '' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="end_date" class="form-label">إلى تاريخ</label>
+                <input type="date" class="form-control" id="end_date" name="end_date"
+                       value="{{ end_date.strftime('%Y-%m-%d') if end_date else '' }}">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">إنشاء التقرير</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if versions is defined and versions %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">الإصدارات ({{ versions|length }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>النظام</th>
+                        <th>الإصدار</th>
+                        <th>تاريخ الإصدار</th>
+                        <th>النوع</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for version in versions %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('systems.details', system_id=version.system.id) }}" class="text-decoration-none">
+                                {{ version.system.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('versions.details', version_id=version.id) }}" class="fw-bold text-decoration-none">
+                                v{{ version.version_number }}
+                            </a>
+                        </td>
+                        <td>{{ version.release_date.strftime('%d/%m/%Y') if version.release_date else '-' }}</td>
+                        <td>{{ 'رئيسي' if version.version_type == 'Major' else 'فرعي' if version.version_type == 'Minor' else 'تصحيح' if version.version_type == 'Patch' else '-' }}</td>
+                        <td>{{ (version.description or '-')[:60] }}{% if version.description and version.description|length > 60 %}...{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

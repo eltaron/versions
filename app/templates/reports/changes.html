@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير التغييرات - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-funnel"></i> تقرير التغييرات</h1>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('reports.changes') }}" class="row g-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-2">
+                <label for="change_type" class="form-label">نوع التغيير</label>
+                <select class="form-select" id="change_type" name="change_type">
+                    <option value="">جميع الأنواع</option>
+                    <option value="New Feature" {% if filters.get('change_type') == 'New Feature' %}selected{% endif %}>ميزة جديدة</option>
+                    <option value="Bug Fix" {% if filters.get('change_type') == 'Bug Fix' %}selected{% endif %}>إصلاح خطأ</option>
+                    <option value="Improvement" {% if filters.get('change_type') == 'Improvement' %}selected{% endif %}>تحسين</option>
+                    <option value="Security" {% if filters.get('change_type') == 'Security' %}selected{% endif %}>أمان</option>
+                    <option value="Breaking Change" {% if filters.get('change_type') == 'Breaking Change' %}selected{% endif %}>تغيير جوهري</option>
+                    <option value="Deprecation" {% if filters.get('change_type') == 'Deprecation' %}selected{% endif %}>إيقاف</option>
+                    <option value="Known Issue" {% if filters.get('change_type') == 'Known Issue' %}selected{% endif %}>مشكلة معروفة</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="system_id" class="form-label">النظام</label>
+                <select class="form-select" id="system_id" name="system_id">
+                    <option value="">جميع الأنظمة</option>
+                    {% for sys in systems %}
+                    <option value="{{ sys.id }}" {% if filters.get('system_id') == sys.id %}selected{% endif %}>{{ sys.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="start_date" class="form-label">من تاريخ</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ filters.get('start_date', '') }}">
+            </div>
+            <div class="col-md-2">
+                <label for="end_date" class="form-label">إلى تاريخ</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ filters.get('end_date', '') }}">
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill">بحث</button>
+                <a href="{{ url_for('reports.changes_export', change_type=filters.get('change_type', ''), system_id=filters.get('system_id', '')) }}" class="btn btn-outline-success">
+                    <i class="bi bi-download"></i> CSV
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    {% set ctl = {'New Feature': 'ميزة جديدة', 'Bug Fix': 'إصلاح خطأ', 'Improvement': 'تحسين', 'Security': 'أمان', 'Breaking Change': 'تغيير جوهري', 'Deprecation': 'إيقاف تشغيل', 'Known Issue': 'مشكلة معروفة'} %}
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>النظام</th>
+                        <th>الإصدار</th>
+                        <th>النوع</th>
+                        <th>العنوان</th>
+                        <th>الوصف</th>
+                        <th>التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for change in results %}
+                    <tr>
+                        <td>
+                            {% if change.version and change.version.system %}
+                            <a href="{{ url_for('systems.details', system_id=change.version.system.id) }}" class="text-decoration-none">
+                                {{ change.version.system.name }}
+                            </a>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            {% if change.version %}
+                            <a href="{{ url_for('versions.details', version_id=change.version.id) }}" class="fw-bold text-decoration-none">
+                                v{{ change.version.version_number }}
+                            </a>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ ctl.get(change.change_type, change.change_type) }}</span></td>
+                        <td>{{ change.title }}</td>
+                        <td>{{ (change.description or '-')[:50] }}{% if change.description and change.description|length > 50 %}...{% endif %}</td>
+                        <td>{{ change.created_at.strftime('%d/%m/%Y') if change.created_at else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if not results %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">لم يتم العثور على نتائج. استخدم المرشحات أعلاه للبحث.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

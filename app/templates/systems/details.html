@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ system.name }} - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1><i class="bi bi-pc-display"></i> {{ system.name }}</h1>
+        <span class="text-muted">{{ system.code }} &middot; {{ {'Desktop Application': 'تطبيق سطح مكتب', 'Web Application': 'تطبيق ويب', 'Website': 'موقع إلكتروني', 'Mobile Application': 'تطبيق موبايل', 'API / Service': 'API / خدمة', 'Other': 'أخرى'}.get(system.system_type, system.system_type) }}</span>
+    </div>
+    <div>
+        <a href="{{ url_for('versions.create', system_id=system.id) }}" class="btn btn-success">
+            <i class="bi bi-plus-circle text-success"></i> إصدار جديد
+        </a>
+        <a href="{{ url_for('systems.edit', system_id=system.id) }}" class="btn btn-outline-primary ms-1">
+            <i class="bi bi-pencil"></i> تعديل
+        </a>
+        {% if system.status != 'Archived' %}
+        <form method="POST" action="{{ url_for('systems.archive', system_id=system.id) }}" class="d-inline" onsubmit="return confirm('أرشفة هذا النظام؟')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger ms-1"><i class="bi bi-archive text-danger"></i> أرشفة</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">معلومات النظام</h5></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="text-muted" style="width:40%">النوع</td><td>{{ {'Desktop Application': 'تطبيق سطح مكتب', 'Web Application': 'تطبيق ويب', 'Website': 'موقع إلكتروني', 'Mobile Application': 'تطبيق موبايل', 'API / Service': 'API / خدمة', 'Other': 'أخرى'}.get(system.system_type, system.system_type) }}</td></tr>
+                    <tr><td class="text-muted">الحالة</td><td>
+                        <span class="badge bg-{{ 'success' if system.status == 'Active' else 'warning' if system.status == 'Maintenance' else 'danger' if system.status == 'Deprecated' else 'secondary' }}">
+                            {{ 'نشط' if system.status == 'Active' else 'صيانة' if system.status == 'Maintenance' else 'متوقف' if system.status == 'Deprecated' else 'مؤرشف' }}
+                        </span>
+                    </td></tr>
+                    <tr><td class="text-muted">المالك</td><td>{{ system.owner or '-' }}</td></tr>
+                    <tr><td class="text-muted">القسم</td><td>{{ system.department or '-' }}</td></tr>
+                    <tr><td class="text-muted">التقنية</td><td>{{ system.technology or '-' }}</td></tr>
+                    <tr><td class="text-muted">المنصة</td><td>{{ system.platform or '-' }}</td></tr>
+                    {% if system.repository_url %}
+                    <tr><td class="text-muted">المستودع</td><td><a href="{{ system.repository_url }}" target="_blank"><i class="bi bi-link-45deg"></i> رابط</a></td></tr>
+                    {% endif %}
+                    {% if system.documentation_url %}
+                    <tr><td class="text-muted">التوثيق</td><td><a href="{{ system.documentation_url }}" target="_blank"><i class="bi bi-link-45deg"></i> رابط</a></td></tr>
+                    {% endif %}
+                    <tr><td class="text-muted">تاريخ الإنشاء</td><td>{{ system.created_at.strftime('%d/%m/%Y') if system.created_at else '-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if current_version %}
+        <div class="card current-version-card mb-4">
+            <div class="card-body text-center">
+                <div class="current-version-label">الإصدار الحالي</div>
+                <div class="current-version-number">v{{ current_version.version_number }}</div>
+                <div class="current-version-meta">
+                    تاريخ الإصدار: {{ current_version.release_date.strftime('%d/%m/%Y') if current_version.release_date else '-' }}
+                    {% if current_version.responsible_person %}
+                    &middot; {{ current_version.responsible_person }}
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('versions.details', version_id=current_version.id) }}" class="btn btn-light mt-2">
+                    <i class="bi bi-eye"></i> عرض التفاصيل
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> لم يتم إصدار أي إصدار بعد.
+            <a href="{{ url_for('versions.create', system_id=system.id) }}">أنشئ الإصدار الأول</a>.
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> سجل الإصدارات</h5>
+                <span class="badge bg-primary">{{ versions|length }} إصدار</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>الإصدار</th>
+                                <th>تاريخ الإصدار</th>
+                                <th>الحالة</th>
+                                <th>أنشئ بواسطة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for version in versions %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('versions.details', version_id=version.id) }}" class="fw-bold text-decoration-none">
+                                        v{{ version.version_number }}
+                                    </a>
+                                    {% if version.is_current %}
+                                        <span class="badge current-badge ms-1">حالي</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ version.release_date.strftime('%d/%m/%Y') if version.release_date else '-' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if version.status == 'Released' else 'warning' if version.status == 'Draft' else 'secondary' }}">
+                                        {{ 'صدر' if version.status == 'Released' else 'مسودة' if version.status == 'Draft' else 'مؤرشف' }}
+                                    </span>
+                                </td>
+                                <td>{{ version.creator.full_name if version.creator else '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('versions.details', version_id=version.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not versions %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">لا توجد إصدارات بعد</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

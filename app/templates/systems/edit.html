@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل {{ system.name }} - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-pencil"></i> تعديل: {{ system.name }}</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('systems.edit', system_id=system.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">اسم النظام <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ system.name }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="code" class="form-label">كود النظام <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="code" name="code" value="{{ system.code }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="system_type" class="form-label">نوع النظام <span class="text-danger">*</span></label>
+                    <select class="form-select" id="system_type" name="system_type" required>
+                        <option value="Desktop Application" {% if system.system_type == 'Desktop Application' %}selected{% endif %}>تطبيق سطح مكتب</option>
+                        <option value="Web Application" {% if system.system_type == 'Web Application' %}selected{% endif %}>تطبيق ويب</option>
+                        <option value="Website" {% if system.system_type == 'Website' %}selected{% endif %}>موقع ويب</option>
+                        <option value="Mobile Application" {% if system.system_type == 'Mobile Application' %}selected{% endif %}>تطبيق موبايل</option>
+                        <option value="API / Service" {% if system.system_type == 'API / Service' %}selected{% endif %}>API / خدمة</option>
+                        <option value="Other" {% if system.system_type == 'Other' %}selected{% endif %}>أخرى</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label for="description" class="form-label">الوصف</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">{{ system.description or '' }}</textarea>
+                </div>
+                <div class="col-md-4">
+                    <label for="owner" class="form-label">المالك / المسؤول</label>
+                    <input type="text" class="form-control" id="owner" name="owner" value="{{ system.owner or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="department" class="form-label">القسم</label>
+                    <input type="text" class="form-control" id="department" name="department" value="{{ system.department or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="technology" class="form-label">التقنية</label>
+                    <input type="text" class="form-control" id="technology" name="technology" value="{{ system.technology or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="platform" class="form-label">المنصة</label>
+                    <input type="text" class="form-control" id="platform" name="platform" value="{{ system.platform or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="repository_url" class="form-label">رابط المستودع</label>
+                    <input type="url" class="form-control" id="repository_url" name="repository_url" value="{{ system.repository_url or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="documentation_url" class="form-label">رابط التوثيق</label>
+                    <input type="url" class="form-control" id="documentation_url" name="documentation_url" value="{{ system.documentation_url or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="status" class="form-label">الحالة</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="Active" {% if system.status == 'Active' %}selected{% endif %}>نشط</option>
+                        <option value="Maintenance" {% if system.status == 'Maintenance' %}selected{% endif %}>صيانة</option>
+                        <option value="Deprecated" {% if system.status == 'Deprecated' %}selected{% endif %}>متوقف</option>
+                        <option value="Archived" {% if system.status == 'Archived' %}selected{% endif %}>مؤرشف</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> حفظ التغييرات</button>
+                <a href="{{ url_for('systems.details', system_id=system.id) }}" class="btn btn-secondary ms-2">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

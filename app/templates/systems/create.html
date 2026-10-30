@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة نظام - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-plus-circle"></i> إضافة نظام جديد</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('systems.create') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">اسم النظام <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="code" class="form-label">كود النظام <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="code" name="code" required placeholder="مثال: HR-SYS">
+                </div>
+                <div class="col-md-3">
+                    <label for="system_type" class="form-label">نوع النظام <span class="text-danger">*</span></label>
+                    <select class="form-select" id="system_type" name="system_type" required>
+                        <option value="">اختر النوع...</option>
+                        <option value="Desktop Application">تطبيق سطح مكتب</option>
+                        <option value="Web Application">تطبيق ويب</option>
+                        <option value="Website">موقع ويب</option>
+                        <option value="Mobile Application">تطبيق موبايل</option>
+                        <option value="API / Service">API / خدمة</option>
+                        <option value="Other">أخرى</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label for="description" class="form-label">الوصف</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+                <div class="col-md-4">
+                    <label for="owner" class="form-label">المالك / المسؤول</label>
+                    <input type="text" class="form-control" id="owner" name="owner">
+                </div>
+                <div class="col-md-4">
+                    <label for="department" class="form-label">القسم</label>
+                    <input type="text" class="form-control" id="department" name="department">
+                </div>
+                <div class="col-md-4">
+                    <label for="technology" class="form-label">التقنية</label>
+                    <input type="text" class="form-control" id="technology" name="technology" placeholder="مثال: Python, React, .NET">
+                </div>
+                <div class="col-md-4">
+                    <label for="platform" class="form-label">المنصة</label>
+                    <input type="text" class="form-control" id="platform" name="platform" placeholder="مثال: Windows, Linux, Cloud">
+                </div>
+                <div class="col-md-4">
+                    <label for="repository_url" class="form-label">رابط المستودع</label>
+                    <input type="url" class="form-control" id="repository_url" name="repository_url">
+                </div>
+                <div class="col-md-4">
+                    <label for="documentation_url" class="form-label">رابط التوثيق</label>
+                    <input type="url" class="form-control" id="documentation_url" name="documentation_url">
+                </div>
+                <div class="col-md-4">
+                    <label for="status" class="form-label">الحالة</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="Active">نشط</option>
+                        <option value="Maintenance">صيانة</option>
+                        <option value="Deprecated">متوقف</option>
+                        <option value="Archived">مؤرشف</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> إنشاء النظام</button>
+                <a href="{{ url_for('systems.index') }}" class="btn btn-secondary ms-2">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

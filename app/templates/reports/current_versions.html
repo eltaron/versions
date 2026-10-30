@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير الإصدارات الحالية - نظام إدارة الإصدارات{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-list-check"></i> تقرير الإصدارات الحالية</h1>
+    <a href="{{ url_for('reports.current_versions_export') }}" class="btn btn-outline-success">
+        <i class="bi bi-download"></i> تصدير CSV
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>النظام</th>
+                        <th>الكود</th>
+                        <th>النوع</th>
+                        <th>الإصدار الحالي</th>
+                        <th>تاريخ الإصدار</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('systems.details', system_id=item.system.id) }}" class="fw-bold text-decoration-none">
+                                {{ item.system.name }}
+                            </a>
+                        </td>
+                        <td><code>{{ item.system.code }}</code></td>
+                        <td><span class="badge bg-light text-dark">{{ {'Desktop Application': 'تطبيق سطح مكتب', 'Web Application': 'تطبيق ويب', 'Website': 'موقع إلكتروني', 'Mobile Application': 'تطبيق موبايل', 'API / Service': 'API / خدمة', 'Other': 'أخرى'}.get(item.system.system_type, item.system.system_type) }}</span></td>
+                        <td>
+                            {% if item.current_version %}
+                                <span class="badge current-version-badge">v{{ item.current_version.version_number }}</span>
+                            {% else %}
+                                <span class="text-muted">لا يوجد</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.current_version.release_date.strftime('%d/%m/%Y') if item.current_version and item.current_version.release_date else '-' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if item.system.status == 'Active' else 'warning' if item.system.status == 'Maintenance' else 'secondary' }}">
+                                {{ 'نشط' if item.system.status == 'Active' else 'صيانة' if item.system.status == 'Maintenance' else 'مؤرشف' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not data %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
